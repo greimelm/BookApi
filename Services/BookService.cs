@@ -1,8 +1,11 @@
-﻿using WebApi.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using WebApi.Data;
+using WebApi.Dtos;
+using WebApi.Models;
 
 namespace WebApi.Services
 {
-    public class BookService : IBookService
+    public class BookService(AppDbContext _context) : IBookService
     {
         static List<Book> books = new List<Book> {
             new Book { Id = 1, Title = "Intermezzo", Author = "Sally Rooney", Genre = "Novel" },
@@ -20,13 +23,27 @@ namespace WebApi.Services
             throw new NotImplementedException();
         }
 
-        public async Task<List<Book>> GetAllBooksAsync()
-            => await Task.FromResult(books);
+        public async Task<List<BookResponse>> GetAllBooksAsync()
+            => await _context.Books.Select(b => new BookResponse
+            {
+                Id = b.Id,
+                Title = b.Title,
+                Author = b.Author
+            }).ToListAsync();
 
-        public async Task<Book?> GetBookByIdAsync(int id)
+        public async Task<BookResponse?> GetBookByIdAsync(int id)
         {
-            var result = books.FirstOrDefault(x => x.Id == id);
-            return await Task.FromResult(result);
+            var result = await _context.Books
+                .Where(b => b.Id == id)
+                .Select(b => new BookResponse
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    Author = b.Author
+                })
+                .FirstOrDefaultAsync();
+
+            return result;
         }
 
         public Task<bool> UpdateBookAsync(int id, Book book)
